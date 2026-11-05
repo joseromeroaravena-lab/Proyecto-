@@ -1,12 +1,9 @@
 
-import sqlite3
-from pathlib import Path
+from conexion import conectar
 
 # Ubicación de la base de datos
-ruta_db = Path(__file__).resolve().parent / "chatbot.db"
 
-conexion = sqlite3.connect(ruta_db)
-conexion.execute("PRAGMA foreign_keys = ON")
+conexion = conectar()
 cursor = conexion.cursor()
 
 # Datos de prueba
