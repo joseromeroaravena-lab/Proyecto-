@@ -1,50 +1,43 @@
+from contextlib import closing
 
 from conexion import conectar
 
-# Ubicación de la base de datos
-
-conexion = conectar()
-cursor = conexion.cursor()
-
-# Datos de prueba
+# Datos ficticios para la prueba de F1
 patient_id = 1
 specialty = "Medicina General"
 professional = "Dra. Ana Martínez"
-appointment_date = "2026-10-26 10:00"
+appointment_date = "2026-11-12 10:00"
 
-# Comprobar que el paciente existe
-cursor.execute(
-    "SELECT name FROM patients WHERE id = ?",
-    (patient_id,)
-)
+with closing(conectar()) as conexion:
+    conexion.execute("PRAGMA foreign_keys = ON")
 
-paciente = cursor.fetchone()
+    with conexion:
+        cursor = conexion.execute("""
+            INSERT INTO appointments (
+                patient_id, specialty, professional, appointment_date,
+                status, specialty_id, professional_id
+            )
+            SELECT p.id, s.name, pr.name, ?, 'scheduled', s.id, pr.id
+            FROM patients AS p
+            CROSS JOIN specialties AS s
+            CROSS JOIN professionals AS pr
+            WHERE p.id = ?
+              AND s.name = ? AND s.active = 1
+              AND pr.name = ? AND pr.active = 1
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM appointments AS a
+                  WHERE a.professional_id = pr.id
+                    AND a.appointment_date = ?
+                    AND a.status IN ('scheduled', 'confirmed')
+              )
+        """, (
+            appointment_date, patient_id, specialty,
+            professional, appointment_date
+        ))
 
-if paciente is None:
-    print("Error: no existe un paciente con ID 1.")
-else:
-    # Registrar la cita médica
-    cursor.execute("""
-        INSERT INTO appointments
-        (patient_id, specialty, professional,
-         appointment_date, status)
-        VALUES (?, ?, ?, ?, ?)
-    """, (
-        patient_id,
-        specialty,
-        professional,
-        appointment_date,
-        "scheduled"
-    ))
-
-    conexion.commit()
-
-    print("=== CITA REGISTRADA ===")
-    print("ID de cita:", cursor.lastrowid)
-    print("Paciente:", paciente[0])
-    print("Especialidad:", specialty)
-    print("Profesional:", professional)
-    print("Fecha:", appointment_date)
-    print("Estado: scheduled")
-
-conexion.close()
+    if cursor.rowcount == 1:
+        print(f"Cita registrada. ID: {cursor.lastrowid}")
+        print(f"Fecha y hora: {appointment_date}")
+    else:
+        print("No se registró la cita. Revisa los datos y si el horario está ocupado.")
