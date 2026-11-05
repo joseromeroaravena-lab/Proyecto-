@@ -7,7 +7,7 @@ ruta_db = Path(__file__).resolve().parent / "chatbot.db"
 
 # Conectar con SQLite
 def conectar():
-    """Conecta con la base existente creada manualmente en DB Browser."""
+    """Se conecta a la base de datos existente creada en DB Browser."""
     conexion = sqlite3.connect(
         ruta_db.as_uri() + "?mode=rw", uri=True, timeout=10
     )
