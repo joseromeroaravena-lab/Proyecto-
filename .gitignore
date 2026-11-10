@@ -11,6 +11,7 @@ env/
 ENV/
 
 # Secrets and local configuration
+.vscode/
 .env
 .env.*
 !.env.example
