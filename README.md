@@ -10,11 +10,11 @@ implementadas o probadas.
 ## Estado actual
 
 - La interfaz de agenda está implementada con Streamlit en
-  `Chatbot_/panel_admin.py`.
+  `panel_admin.py`, en la raíz del repositorio.
 - Hay scripts Python para consultar SQLite, crear citas y simular una
   confirmación o cancelación.
 - El panel requiere una base de datos SQLite con el esquema esperado y usa
-  `Chatbot_/chatbot.db` por defecto.
+  `chatbot.db` junto a los scripts por defecto.
 - No se debe usar información real de pacientes ni credenciales reales.
 
 ## Requisitos
@@ -30,20 +30,19 @@ Desde la raíz del repositorio, en PowerShell:
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python -m streamlit run Chatbot_/panel_admin.py
+python -m streamlit run panel_admin.py
 ```
 
-La aplicación necesita `Chatbot_/chatbot.db`. `.gitignore` evita agregar bases
-locales nuevas por accidente; la base existente ya está seguida por Git y no
-deja de estarlo al agregar esta regla. Prepara una base de demostración con
-datos estrictamente ficticios antes de ejecutar el panel en un entorno limpio.
+La aplicación necesita `chatbot.db` en la raíz. `.gitignore` excluye bases
+locales; prepara una base de demostración con datos estrictamente ficticios
+antes de ejecutar el panel en un entorno limpio.
 No ejecutes `crear_cita.py` repetidamente: cada ejecución puede crear otra
 cita. Los scripts de consulta también pueden ejecutarse desde la raíz:
 
 ```powershell
-python Chatbot_/conexion.py
-python Chatbot_/ver_pacientes.py
-python Chatbot_/ver_citas.py
+python conexion.py
+python ver_pacientes.py
+python ver_citas.py
 ```
 
 ## CI
@@ -51,7 +50,7 @@ python Chatbot_/ver_citas.py
 GitHub Actions ejecuta estas verificaciones en pull requests y en pushes a
 `main` o `master`, usando Python 3.12:
 
-1. **Lint:** `ruff check --select E4,E7,E9,F Chatbot_ tests`.
+1. **Lint:** Ruff revisa los scripts Python ubicados en la raíz.
 2. **Tests:** `python -m pytest -q`; utilizan una SQLite temporal y no modifican
    la base local.
 3. **Build verification:** después de lint y tests, instala las dependencias de
@@ -61,9 +60,9 @@ Para reproducir el pipeline localmente:
 
 ```powershell
 python -m pip install -r requirements-dev.txt
-ruff check --select E4,E7,E9,F Chatbot_ tests
+ruff check --select E4,E7,E9,F conexion.py crear_cita.py panel_admin.py simular_respuesta.py ver_citas.py ver_pacientes.py
 python -m pytest -q
-python -m compileall -q Chatbot_
+python -m compileall -q conexion.py crear_cita.py panel_admin.py simular_respuesta.py ver_citas.py ver_pacientes.py
 ```
 
 El proyecto no tiene un paso de empaquetado. La verificación de compilación es
@@ -79,17 +78,15 @@ CD con validaciones previas:
    protección que exija que los jobs `Lint`, `Test` y `Build verification`
    pasen antes de fusionar cambios.
 2. En Streamlit Community Cloud, conecta este repositorio y selecciona la rama
-   `main` y el archivo `Chatbot_/panel_admin.py`.
+   `main` y el archivo `panel_admin.py`.
 3. Streamlit instalará las dependencias desde `requirements.txt` y desplegará
    automáticamente los commits fusionados en esa rama.
 
-**No publiques la base de trabajo ni datos reales.** La base `Chatbot_/chatbot.db`
-ya estaba seguida por Git antes de agregar `.gitignore`; el ignore no deja de
-seguir archivos existentes ni los elimina del historial. Comprueba y prepara
-una base ficticia/sanitizada antes de conectar el repositorio a un servicio
-público. Además, el código actual espera ese archivo SQLite local y no incluye
-provisión de base ni persistencia administrada por la nube; el despliegue no es
-apto para producción y el disco del servicio no debe considerarse persistente.
+**No publiques la base de trabajo ni datos reales.** Prepara una base
+ficticia/sanitizada antes de conectar el repositorio a un servicio público.
+Además, el código actual espera un archivo SQLite local y no incluye provisión
+de base ni persistencia administrada por la nube; el despliegue no es apto para
+producción y el disco del servicio no debe considerarse persistente.
 
 ## Documentación del proyecto
 
