@@ -1,13 +1,11 @@
-import sqlite3
-from pathlib import Path
+from conexion import conectar, ruta_db
 
 print("Iniciando consulta de pacientes...")
 
-ruta_db = Path(__file__).resolve().parent / "chatbot.db"
 
 print("Base de datos:", ruta_db)
 
-conexion = sqlite3.connect(ruta_db)
+conexion = conectar()
 cursor = conexion.cursor()
 
 cursor.execute("SELECT id, name, phone FROM patients")

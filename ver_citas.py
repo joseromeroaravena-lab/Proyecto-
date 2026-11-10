@@ -1,12 +1,9 @@
 
-import sqlite3
-from pathlib import Path
+from conexion import conectar
 
 print("Iniciando consulta de citas médicas...")
 
-ruta_db = Path(__file__).resolve().parent / "chatbot.db"
-
-conexion = sqlite3.connect(ruta_db)
+conexion = conectar()
 cursor = conexion.cursor()
 
 # Consultar citas y los nombres de sus pacientes
