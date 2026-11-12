@@ -2,10 +2,10 @@
 
 Registro de funcionalidades incorporadas y pendientes del prototipo CESFAM
 Bellavista. Este documento refleja el código y la documentación revisados al
-10/11/2026; una funcionalidad descrita como parcial o pendiente no debe
+12/11/2026; una funcionalidad descrita como parcial o pendiente no debe
 considerarse terminada ni desplegada.
 
-## [En desarrollo] — 10/11/2026
+## [En desarrollo]
 
 ### Incorporado
 
@@ -13,8 +13,6 @@ considerarse terminada ni desplegada.
   consultar citas y sus estados, registrar pacientes ficticios y crear citas
   asociando paciente, profesional y especialidad. Se rechazan fechas pasadas y
   horarios ocupados para el mismo profesional.
-- **F1 — Consultas locales:** hay scripts para consultar pacientes y citas, y
-  un módulo de conexión a SQLite.
 - **F2 — Simulación de respuesta:** `simular_respuesta.py` permite elegir
   confirmar o cancelar e ingresar una cita. La operación actualiza el estado
   si la cita futura pertenece al paciente indicado y está en un estado
@@ -22,6 +20,12 @@ considerarse terminada ni desplegada.
 - **Pruebas iniciales:** se agregaron pruebas automatizadas para una
   confirmación y para rechazar una respuesta de un paciente distinto, usando
   una base de datos temporal.
+- **Base reproducible:** `crear_base.py` genera una SQLite completa a partir de
+  `database/schema.sql` y `database/seed_demo.sql`. Incluye catálogos, pacientes
+  y citas ficticias relativas a la fecha de instalación; conserva cualquier
+  base existente y valida integridad y claves foráneas.
+- **Pruebas del inicializador:** se comprueba la creación completa, la
+  conservación de una base existente y la limpieza si el esquema falla.
 - **Integración continua:** GitHub Actions ejecuta lint, pruebas y verificación
   de compilación con Python 3.12 en pull requests y pushes a `main`/`master`.
 - **Documentación y configuración:** se agregaron README, reglas `.gitignore`
@@ -29,18 +33,13 @@ considerarse terminada ni desplegada.
 
 ### Parcial o pendiente de completar
 
-- **F1:** faltan los filtros de agenda por fecha, profesional y estado
-  establecidos en HU-01. La aplicación necesita una base SQLite con el esquema
-  esperado; no se incluye aquí una base de demostración preparada y reproducible.
-- **F1:** aunque el panel consulta profesionales y especialidades, falta
-  verificar y documentar de forma reproducible el esquema y los datos de
-  demostración. La guía y las historias registran decisiones de modelo de datos
-  todavía pendientes.
+- **F1:** faltan los filtros de agenda por fecha, profesional y estado. El
+  inicializador ya permite preparar una base reproducible, pero quedan decisiones
+  del modelo de datos y pruebas del panel por completar.
 - **F2:** la simulación no demuestra todavía el flujo completo de chatbot ni
-  satisface todos los criterios de HU-03/HU-04. Por ejemplo, las respuestas
-  repetidas para citas ya confirmadas o canceladas no se registran como
-  resultado idempotente; el registro actual tampoco conserva todos los datos de
-  respuesta solicitados en las historias.
+  todos los flujos esperados. Por ejemplo, las respuestas repetidas para citas
+  ya confirmadas o canceladas no se registran como resultado idempotente; el
+  registro actual tampoco conserva todos los datos de respuesta previstos.
 - **Despliegue:** no se ha desplegado la aplicación. Streamlit Community Cloud
   está documentado como destino posible, pero antes hay que resolver la
   provisión y persistencia de SQLite y preparar datos exclusivamente ficticios.
@@ -58,9 +57,23 @@ considerarse terminada ni desplegada.
 - **F5 — Riesgo simulado:** entrenamiento con datos sintéticos, cálculo y
   almacenamiento de indicadores con fecha y versión del modelo, visualización
   claramente simulada y documentación de evaluación.
-- **Pruebas completas:** faltan pruebas de integración y aceptación para los
-  criterios de HU-01 a HU-07, además de casos para los flujos y errores
-  pendientes.
+- **Pruebas completas:** faltan pruebas de integración y aceptación del panel,
+  además de casos para los flujos y errores pendientes.
+
+## [0.1.0] — 2026-10-27
+
+Primera versión correspondiente a la Sumativa 1, etiquetada retrospectivamente
+sobre el commit `21a560f` del 18/10/2026.
+
+### Incorporado
+
+- Conexión inicial entre Python y una base SQLite local.
+- Script para registrar una cita ficticia.
+- Scripts de consola para consultar pacientes y citas.
+- Primera base de demostración utilizada durante el desarrollo inicial de F1.
+
+Esta versión todavía no incluía el panel Streamlit, la simulación de respuestas,
+las pruebas automatizadas ni la integración continua.
 
 ## Alcance y seguridad
 
@@ -68,15 +81,19 @@ considerarse terminada ni desplegada.
   reales del CESFAM.
 - Usar exclusivamente datos ficticios o sintéticos; no publicar información
   personal, clínica, secretos ni credenciales.
-- `Chatbot_/chatbot.db` ya estaba seguido por Git. Añadirlo a `.gitignore` no
-  deja de seguirlo ni lo elimina del historial; revisar su contenido antes de
+- Una versión anterior de `Chatbot_/chatbot.db` permanece en el historial de
+  Git aunque el archivo actual esté ignorado; revisar ese historial antes de
   publicar o desplegar el repositorio.
 - F4 requiere una decisión administrativa manual. No se ofrece reagendamiento
   desde el chatbot ni reasignación automática.
 
 ## Referencias
 
-- `GUIA_CONTINUIDAD_CESFAM.md`: alcance del MVP, estado técnico y plan de
-  continuidad.
-- `docs/HISTORIAS_USUARIO.md`: criterios de aceptación de HU-01 a HU-07.
+- `README.md`: instalación, ejecución, CI y despliegue previsto.
+
+La guía de continuidad, las historias de usuario y los documentos de
+planificación se conservan fuera del repositorio y no se enlazan desde GitHub.
+
+[En desarrollo]: https://github.com/joseromeroaravena-lab/Proyecto-/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/joseromeroaravena-lab/Proyecto-/releases/tag/v0.1.0
 
