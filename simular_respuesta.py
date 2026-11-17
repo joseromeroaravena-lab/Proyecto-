@@ -1,22 +1,16 @@
 import sqlite3
 from contextlib import closing
-from datetime import datetime
 
 from conexion import conectar
+from citas_servicio import cambiar_estado
 
 
 def registrar_respuesta(cita_id, paciente_id, respuesta):
-    nuevo_estado, estado_1, estado_2 = {
-        "confirmar": ("confirmed", "scheduled", "scheduled"),
-        "cancelar": ("cancelled", "scheduled", "confirmed"),
-    }[respuesta]
-
-    ahora = datetime.now().strftime("%Y-%m-%d %H:%M")
-
     with closing(conectar()) as conexion:
         conexion.execute("PRAGMA foreign_keys = ON")
 
         with conexion:
+            conexion.execute('BEGIN IMMEDIATE')
             conexion.execute("""
                 CREATE TABLE IF NOT EXISTS appointment_responses (
                     id INTEGER PRIMARY KEY,
@@ -28,16 +22,8 @@ def registrar_respuesta(cita_id, paciente_id, respuesta):
                 )
             """)
 
-            cambio = conexion.execute("""
-                UPDATE appointments
-                SET status = ?
-                WHERE id = ?
-                  AND patient_id = ?
-                  AND appointment_date > ?
-                  AND status IN (?, ?)
-            """, (nuevo_estado, cita_id, paciente_id, ahora, estado_1, estado_2))
-
-            if cambio.rowcount != 1:
+            resultado = cambiar_estado(conexion, cita_id, paciente_id, respuesta)
+            if resultado not in ('confirmed', 'cancelled', 'already_confirmed', 'already_cancelled'):
                 return False
 
             conexion.execute("""
