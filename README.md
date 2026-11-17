@@ -56,8 +56,8 @@ cita. Los scripts de consulta también pueden ejecutarse desde la raíz:
 
 ## CI
 
-GitHub Actions ejecuta estas verificaciones en pull requests y en pushes a
-`main` o `master`, usando Python 3.12:
+GitHub Actions usa Python 3.12 para comprobar cada pull request y cada push a
+`beta`, `main` o `master`.
 
 1. **Lint:** Ruff revisa los scripts Python ubicados en la raíz.
 2. **Tests:** `python -m pytest -q`; utilizan una SQLite temporal y no modifican
@@ -77,6 +77,16 @@ Get-ChildItem -File -Filter *.py | ForEach-Object { python -m py_compile $_.Full
 El proyecto no tiene un paso de empaquetado. La verificación de compilación es
 el paso de build apropiado para estos scripts.
 
+## Flujo de ramas
+
+1. Crea tu rama desde `beta` con el formato `feature/<nombre>` o el formato
+   numerado del proyecto, como `4-feature_lista_espera`.
+2. Abre un pull request a `beta`. GitHub comprueba la rama de origen y exige
+   `Lint`, `Test` y `Build verification` antes de permitir la fusión.
+3. Cuando termine el CI de `beta` y se valide el cambio, abre un pull request
+   desde `beta` hacia `master`. GitHub vuelve a ejecutar las comprobaciones
+   sobre el resultado de la fusión.
+
 ## Despliegue pendiente
 
 La integración requiere FastAPI, Streamlit, un worker independiente y acceso a
@@ -84,8 +94,8 @@ la misma SQLite persistente. Publicar solo el panel no satisface esos requisitos
 La evaluación de servicios gratuitos y el respaldo local con túnel HTTPS están
 en [WHATSAPP.md](WHATSAPP.md). No se ha desplegado infraestructura.
 
-Mantener el flujo `feature → beta → master`; no publicar datos reales, secretos
-ni la base de trabajo. No crear `v0.2.0` hasta validar la entrega integrada.
+Mantener datos reales, secretos y la base de trabajo fuera de GitHub. Reservar
+`v0.2.0` para la entrega integrada y validada.
 
 ## Documentación del proyecto
 
