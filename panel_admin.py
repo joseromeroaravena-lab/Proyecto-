@@ -1,10 +1,13 @@
 import sqlite3
+import os
+import hmac
 from contextlib import closing
 from datetime import datetime
 
 import streamlit as st
 
 from conexion import conectar
+from tiempos import SANTIAGO
 
 
 def registrar_paciente(nombre, telefono):
@@ -47,6 +50,23 @@ def registrar_cita(paciente_id, profesional_id, especialidad_id, fecha_hora):
 
 
 st.set_page_config(page_title="Agenda simulada", layout="wide")
+clave = os.getenv('CESFAM_PANEL_PASSWORD', '')
+if not clave:
+    st.error('Configura CESFAM_PANEL_PASSWORD en .env antes de abrir el panel.')
+    st.stop()
+if not st.session_state.get('authenticated'):
+    with st.form('login'):
+        entrada = st.text_input('Contraseña administrativa', type='password')
+        ingresar = st.form_submit_button('Ingresar')
+    if ingresar and hmac.compare_digest(entrada.encode(), clave.encode()):
+        st.session_state['authenticated'] = True
+        st.rerun()
+    elif ingresar:
+        st.error('Contraseña incorrecta.')
+    st.stop()
+if st.button('Cerrar sesión'):
+    st.session_state.clear()
+    st.rerun()
 st.title("Agenda simulada de citas")
 st.caption("Panel administrativo · Prototipo con datos ficticios")
 
@@ -113,7 +133,7 @@ with st.expander("Nueva cita"):
                 second=0, microsecond=0
             )
 
-            if fecha_cita <= datetime.now():
+            if fecha_cita <= datetime.now(SANTIAGO).replace(tzinfo=None):
                 st.warning("Selecciona una fecha y hora futuras.")
             else:
                 try:
@@ -168,3 +188,29 @@ if citas:
     st.dataframe(filas, hide_index=True)
 else:
     st.info("Todavía no hay citas registradas.")
+
+st.subheader('Consentimiento de pruebas')
+if pacientes:
+    with st.form('consentimiento'):
+        seleccionado = st.selectbox('Paciente ficticio', list(pacientes), format_func=pacientes.get)
+        consentimiento = st.checkbox('Autoriza recibir mensajes de prueba por WhatsApp')
+        guardar = st.form_submit_button('Guardar consentimiento')
+    if guardar:
+        with closing(conectar()) as db, db:
+            db.execute('UPDATE patients SET consent_whatsapp=? WHERE id=?',
+                       (int(consentimiento), seleccionado))
+        st.success('Consentimiento actualizado. Los envíos requieren además teléfono autorizado en configuración.')
+
+st.subheader('Respuestas y envíos WhatsApp')
+try:
+    with closing(conectar()) as db:
+        for titulo, consulta in (
+            ('Respuestas', 'SELECT meta_id, patient_id, appointment_id, content, result, received_at FROM whatsapp_inbound ORDER BY id DESC LIMIT 200'),
+            ('Envíos', 'SELECT id, patient_id, appointment_id, kind, status, attempts, created_at, accepted_at, delivered_at, read_at, error_code FROM whatsapp_outbox ORDER BY id DESC LIMIT 200'),
+        ):
+            cursor = db.execute(consulta)
+            columnas = [c[0] for c in cursor.description]
+            st.caption(titulo)
+            st.dataframe([dict(zip(columnas, fila)) for fila in cursor.fetchall()], hide_index=True)
+except sqlite3.OperationalError:
+    st.info('Ejecuta migrar_whatsapp.py para habilitar el registro WhatsApp.')

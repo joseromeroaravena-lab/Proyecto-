@@ -7,6 +7,7 @@ from datetime import datetime, time, timedelta
 from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
+from migrar_whatsapp import migrar
 
 
 DIRECTORIO_PROYECTO = Path(__file__).resolve().parent
@@ -124,6 +125,7 @@ def crear_base(ruta_db=RUTA_BASE_PREDETERMINADA, fecha_base=None):
                     + "\n"
                     + leer_sql(RUTA_DATOS_DEMO)
                 )
+                migrar(conexion)
                 insertar_citas_demo(conexion, fecha_base)
                 validar_base(conexion, fecha_base)
             except Exception:

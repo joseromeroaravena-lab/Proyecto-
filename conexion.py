@@ -1,9 +1,13 @@
 import sqlite3
+import os
 from contextlib import closing
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent / '.env')
 
 # Ubicación de la base de datos
-ruta_db = Path(__file__).resolve().parent / "chatbot.db"
+ruta_db = Path(os.getenv('CESFAM_DB_PATH', str(Path(__file__).resolve().parent / 'chatbot.db'))).resolve()
 
 # Conectar con SQLite
 def conectar():

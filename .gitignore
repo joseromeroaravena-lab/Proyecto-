@@ -23,6 +23,7 @@ ENV/
 *.sqlite
 *.sqlite3
 *.sqbpro
+backups/
 
 # Test, lint, and build artifacts
 .pytest_cache/
