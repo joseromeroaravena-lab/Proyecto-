@@ -108,8 +108,10 @@ def test_panel_combines_filters_and_clears_only_filter_state(agenda_db):
     assert not panel.exception
     assert ids_agenda(panel) == [101, 104, 102, 103]
     assert panel.date_input(key="agenda_fecha").value is None
-    assert panel.selectbox(key="agenda_profesional").value is None
-    assert panel.selectbox(key="agenda_estado").value is None
+    assert panel.selectbox(key="agenda_profesional").value == ""
+    assert panel.selectbox(key="agenda_estado").value == ""
+    assert panel.selectbox(key="agenda_profesional").format_func("") == "Todos"
+    assert panel.selectbox(key="agenda_estado").format_func("") == "Todos"
     assert panel.session_state["authenticated"] is True
 
 

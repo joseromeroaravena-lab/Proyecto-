@@ -9,6 +9,12 @@ o probadas.
 
 ## Estado actual
 
+La integración local con WhatsApp (FastAPI, respuestas, cola y recordatorios)
+está preparada para pruebas. Consulta [WHATSAPP.md](WHATSAPP.md) para configurar
+`.env`, proteger el panel y comenzar desde cero con Meta. No se ha verificado
+todavía con una cuenta de Meta ni desplegado en nube. Los envíos están apagados
+por defecto y limitados al número de prueba de Meta.
+
 - La interfaz de agenda está implementada con Streamlit en
   `panel_admin.py`, en la raíz del repositorio.
 - La agenda incluye filtros combinables por fecha, profesional y estado. La fecha
@@ -20,7 +26,8 @@ o probadas.
   confirmación o cancelación.
 - El panel usa `chatbot.db` junto a los scripts. En una instalación nueva,
   `crear_base.py` genera el esquema y datos ficticios de demostración.
-- No se debe usar información real de pacientes ni credenciales reales.
+- No se debe usar información real de pacientes. Guardar credenciales de prueba
+  únicamente en `.env`, excluido de Git.
 
 ## Requisitos
 
@@ -35,6 +42,8 @@ Desde la raíz del repositorio, en PowerShell:
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe crear_base.py
+Copy-Item -LiteralPath .env.example -Destination .env
+# Editar .env: establecer CESFAM_PANEL_PASSWORD antes de abrir el panel.
 .\.venv\Scripts\python.exe -m streamlit run panel_admin.py
 ```
 
@@ -52,8 +61,8 @@ cita. Los scripts de consulta también pueden ejecutarse desde la raíz:
 
 ## CI
 
-GitHub Actions ejecuta estas verificaciones en pull requests y en pushes a
-`main` o `master`, usando Python 3.12:
+GitHub Actions usa Python 3.12 para comprobar cada pull request y cada push a
+`beta`, `main` o `master`.
 
 1. **Lint:** Ruff revisa los scripts Python ubicados en la raíz.
 2. **Tests:** `python -m pytest -q`; utilizan una SQLite temporal y no modifican
@@ -65,34 +74,33 @@ Para reproducir el pipeline localmente:
 
 ```powershell
 python -m pip install -r requirements-dev.txt
-ruff check --select E4,E7,E9,F conexion.py crear_base.py crear_cita.py panel_admin.py simular_respuesta.py ver_citas.py ver_pacientes.py
+ruff check --select E4,E7,E9,F .
 python -m pytest -q
-python -m compileall -q conexion.py crear_base.py crear_cita.py panel_admin.py simular_respuesta.py ver_citas.py ver_pacientes.py
+Get-ChildItem -File -Filter *.py | ForEach-Object { python -m py_compile $_.FullName }
 ```
 
 El proyecto no tiene un paso de empaquetado. La verificación de compilación es
 el paso de build apropiado para estos scripts.
 
-## Despliegue en Streamlit Community Cloud
+## Flujo de ramas
 
-Streamlit Community Cloud despliega desde una rama del repositorio de GitHub;
-no necesita un job de deploy separado en Actions. Para que el despliegue sea
-CD con validaciones previas:
+1. Crea tu rama desde `beta` con el formato `feature/<nombre>` o el formato
+   numerado del proyecto, como `4-feature_lista_espera`.
+2. Abre un pull request a `beta`. GitHub comprueba la rama de origen y exige
+   `Lint`, `Test` y `Build verification` antes de permitir la fusión.
+3. Cuando termine el CI de `beta` y se valide el cambio, abre un pull request
+   desde `beta` hacia `master`. GitHub vuelve a ejecutar las comprobaciones
+   sobre el resultado de la fusión.
 
-1. En GitHub, configura `main` como rama de producción y agrega una regla de
-   protección que exija que los jobs `Lint`, `Test` y `Build verification`
-   pasen antes de fusionar cambios.
-2. En Streamlit Community Cloud, conecta este repositorio y selecciona la rama
-   `main` y el archivo `panel_admin.py`.
-3. Streamlit instalará las dependencias desde `requirements.txt` y desplegará
-   automáticamente los commits fusionados en esa rama.
+## Despliegue pendiente
 
-**No publiques la base de trabajo ni datos reales.** Prepara una base
-ficticia/sanitizada antes de conectar el repositorio a un servicio público.
-El inicializador permite preparar SQLite localmente, pero todavía no se ejecuta
-automáticamente durante un despliegue. El proyecto tampoco incluye persistencia
-administrada por la nube; no es apto para producción y el disco del servicio no
-debe considerarse persistente.
+La integración requiere FastAPI, Streamlit, un worker independiente y acceso a
+la misma SQLite persistente. Publicar solo el panel no satisface esos requisitos.
+La evaluación de servicios gratuitos y el respaldo local con túnel HTTPS están
+en [WHATSAPP.md](WHATSAPP.md). No se ha desplegado infraestructura.
+
+Mantener datos reales, secretos y la base de trabajo fuera de GitHub. Reservar
+`v0.2.0` para la entrega integrada y validada.
 
 ## Documentación del proyecto
 

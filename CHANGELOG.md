@@ -7,15 +7,22 @@ considerarse terminada ni desplegada.
 
 ## [En desarrollo]
 
-### 18/11/2026 — Filtros en 1-feature_agenda_simulada
+### Filtros de agenda
 
-- Filtros combinables por fecha, profesional y estado, y opción Limpiar filtros.
-- Actualización de agenda conservando filtros, contador de coincidencias y total.
-- Consulta del día completo y acceso a profesionales inactivos y datos históricos.
-- 13 pruebas nuevas de consulta e interfaz; 18 pruebas aprobadas sobre la base de
-  esta rama (5 existentes y 13 nuevas). Ruff y compilación correctos.
-- Cambios preparados directamente en 1-feature_agenda_simulada por indicación del
-  usuario, sin fusión ni envío a beta.
+- Filtros combinables por fecha, profesional y estado, con opción Limpiar filtros.
+- Actualizar agenda conserva la selección y muestra los estados vigentes, con
+  contadores de citas encontradas y citas registradas.
+- La fecha incluye todo el día. Las opciones de profesional incluyen registros
+  históricos e inactivos presentes en las citas.
+- Pruebas de consulta e interfaz para los filtros, los casos sin coincidencias
+  y la actualización de estados en el panel con acceso administrativo.
+
+### Integración WhatsApp local (sin publicar)
+
+- Webhook firmado, respuestas idempotentes y worker de recordatorios implementados.
+- Migración con respaldo, acceso al panel y consulta de actividad.
+- Envíos apagados por defecto; solo se permite el emisor de prueba de Meta.
+- Instrucciones en WHATSAPP.md; configuración Meta y despliegue pendientes.
 
 ### Incorporado
 
@@ -43,19 +50,14 @@ considerarse terminada ni desplegada.
 
 ### Parcial o pendiente de completar
 
-- **F1:** filtros implementados y cubiertos por pruebas de consulta e interfaz.
-  Queda revisar visualmente el resultado y completar la aceptación de la función.
-- **F2:** la simulación no demuestra todavía el flujo completo de chatbot ni
-  todos los flujos esperados. Por ejemplo, las respuestas repetidas para citas
-  ya confirmadas o canceladas no se registran como resultado idempotente; el
-  registro actual tampoco conserva todos los datos de respuesta previstos.
-- **Despliegue:** no se ha desplegado la aplicación. Streamlit Community Cloud
-  está documentado como destino posible, pero antes hay que resolver la
-  provisión y persistencia de SQLite y preparar datos exclusivamente ficticios.
+- **F2:** lógica compartida y respuestas WhatsApp verificadas con HTTP simulado;
+  falta configurar Meta y comprobar el flujo en un teléfono autorizado.
+- **Despliegue:** no se ha desplegado la aplicación. La evaluación está en
+  WHATSAPP.md; falta comprobar un entorno gratuito con persistencia y worker.
 
 ### Aún no implementado
 
-- **F3 — Recordatorios:** generación y registro de recordatorios a 72 y 24 horas,
+- **F3 — Entrega real pendiente:** generación local implementada a 72 y 24 horas,
   prevención de duplicados, control de zona horaria y registro de intentos
   exitosos o fallidos.
 - **F4 — Reasignación manual:** alerta administrativa al liberarse una cita,
@@ -105,4 +107,3 @@ planificación se conservan fuera del repositorio y no se enlazan desde GitHub.
 
 [En desarrollo]: https://github.com/joseromeroaravena-lab/Proyecto-/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/joseromeroaravena-lab/Proyecto-/releases/tag/v0.1.0
-

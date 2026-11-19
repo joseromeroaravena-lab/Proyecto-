@@ -2,14 +2,44 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, beta]
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  branch-flow:
+    name: Branch flow to ${{ github.base_ref }}
+    if: github.event_name == 'pull_request' && (github.base_ref == 'beta' || github.base_ref == 'master')
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Validate pull request source
+        shell: bash
+        env:
+          TARGET_BRANCH: ${{ github.base_ref }}
+          SOURCE_BRANCH: ${{ github.head_ref }}
+          SOURCE_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          case "$TARGET_BRANCH" in
+            beta)
+              if [[ "$SOURCE_BRANCH" =~ ^([0-9]+-feature_|feature/).+$ ]]; then
+                exit 0
+              fi
+              echo "::error::Abre el PR a beta desde una rama feature/<nombre> o <n>-feature_<nombre>."
+              ;;
+            master)
+              if [[ "$SOURCE_BRANCH" == beta && "$SOURCE_REPOSITORY" == "$GITHUB_REPOSITORY" ]]; then
+                exit 0
+              fi
+              echo "::error::Abre el PR a master desde beta de este repositorio."
+              ;;
+          esac
+          exit 1
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -21,7 +51,7 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-dev.txt
       - run: python -m pip install -r requirements-dev.txt
-      - run: ruff check --select E4,E7,E9,F agenda_consultas.py conexion.py crear_base.py crear_cita.py panel_admin.py simular_respuesta.py ver_citas.py ver_pacientes.py
+      - run: ruff check --select E4,E7,E9,F .
 
   test:
     name: Test
@@ -48,4 +78,4 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
       - run: python -m pip install -r requirements.txt
-      - run: python -m compileall -q agenda_consultas.py conexion.py crear_base.py crear_cita.py panel_admin.py simular_respuesta.py ver_citas.py ver_pacientes.py
+      - run: python -m compileall -q *.py
