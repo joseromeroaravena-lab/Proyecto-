@@ -15,9 +15,10 @@ from tiempos import ahora_utc, instante
 from whatsapp_api import reconciliar_estado
 from whatsapp_config import Config
 from whatsapp_servicio import encolar, normalizar_telefono, detalle_recordatorio
+from whatsapp_botones import ACCIONES, payload_boton
 
 
-def generar(db, ahora=None):
+def generar(db, ahora=None, botones=False):
     ahora = ahora or ahora_utc()
     citas = db.execute("""SELECT a.id, a.patient_id, a.appointment_date, a.created_at,
         a.professional, a.specialty
@@ -40,7 +41,7 @@ def generar(db, ahora=None):
             paciente_id,
             cita_id,
             f"{horas}h",
-            detalle_recordatorio(cita_id, profesional, especialidad, fecha)[0],
+            detalle_recordatorio(cita_id, profesional, especialidad, fecha, botones)[0],
             ahora,
         )
 
@@ -77,8 +78,10 @@ def construir_payload(db, fila, config, ahora):
             return None, "superseded"
         if not config.template:
             return None, "blocked_template"
+        if config.buttons and not config.secret:
+            return None, "blocked_buttons"
         _, parametros = detalle_recordatorio(
-            fila["appointment_id"], cita[2], cita[3], cita[1]
+            fila["appointment_id"], cita[2], cita[3], cita[1], config.buttons
         )
         payload.update(
             type="template",
@@ -95,6 +98,21 @@ def construir_payload(db, fila, config, ahora):
                 ],
             },
         )
+        if config.buttons:
+            for indice, accion in enumerate(ACCIONES):
+                payload["template"]["components"].append(
+                    {
+                        "type": "button",
+                        "sub_type": "quick_reply",
+                        "index": str(indice),
+                        "parameters": [
+                            {
+                                "type": "payload",
+                                "payload": payload_boton(fila, accion, config.secret),
+                            }
+                        ],
+                    }
+                )
     return payload, None
 
 
@@ -178,7 +196,7 @@ def despachar(config, cliente=None, ahora=None):
 def ciclo(config):
     with closing(conectar()) as db, db:
         db.execute("BEGIN IMMEDIATE")
-        generar(db)
+        generar(db, botones=config.buttons)
     if config.enabled:
         despachar(config)
 

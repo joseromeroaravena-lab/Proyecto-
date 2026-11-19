@@ -15,6 +15,10 @@ está preparada para pruebas. Consulta [WHATSAPP.md](WHATSAPP.md) para configura
 todavía con una cuenta de Meta ni desplegado en nube. Los envíos están apagados
 por defecto y limitados al número de prueba de Meta.
 
+El nuevo modo de recordatorios con botones Confirmar/Cancelar está implementado
+y probado localmente. Su plantilla separada está en revisión en Meta; la activación
+y la prueba en teléfono se describen en WHATSAPP.md. El modo anterior sigue disponible.
+
 - La interfaz de agenda está implementada con Streamlit en
   `panel_admin.py`, en la raíz del repositorio.
 - Hay scripts Python para consultar SQLite, crear citas y simular una

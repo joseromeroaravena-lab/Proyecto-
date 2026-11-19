@@ -7,6 +7,17 @@ considerarse terminada ni desplegada.
 
 ## [En desarrollo]
 
+### 18/11/2026 — Botones por cita (cambios locales)
+
+- Nuevo modo opcional de plantilla con Confirmar/Cancelar, tres variables de cuerpo
+  y vínculo firmado de cada botón con envío, paciente, cita y acción.
+- Soporte de respuestas de plantilla e interactivas; protección ante botones
+  alterados, ajenos o de citas pasadas, y acuses con profesional/fecha/hora.
+- Compatibilidad con la plantilla anterior y comandos de texto. No se selecciona
+  automáticamente una cita si una respuesta numérica es ambigua.
+- 55 pruebas aprobadas, Ruff y compilación correctos. Nueva plantilla enviada a Meta
+  con estado PENDING; todavía no activada ni probada en teléfono con botones.
+
 ### Integración WhatsApp local (sin publicar)
 
 - Webhook firmado, respuestas idempotentes y worker de recordatorios implementados.
