@@ -11,6 +11,11 @@ o probadas.
 
 - La interfaz de agenda está implementada con Streamlit en
   `panel_admin.py`, en la raíz del repositorio.
+- La agenda incluye filtros combinables por fecha, profesional y estado. La fecha
+  vacía permite ver todos los días; los selectores ofrecen Todos.
+  Limpiar filtros restaura la agenda completa y Actualizar agenda conserva la
+  selección. Se muestran coincidencias y total registrado por separado, y mensajes
+  distintos para búsquedas sin resultados y para una agenda vacía.
 - Hay scripts Python para consultar SQLite, crear citas y simular una
   confirmación o cancelación.
 - El panel usa `chatbot.db` junto a los scripts. En una instalación nueva,

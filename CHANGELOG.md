@@ -7,6 +7,16 @@ considerarse terminada ni desplegada.
 
 ## [En desarrollo]
 
+### 18/11/2026 — Filtros en 1-feature_agenda_simulada
+
+- Filtros combinables por fecha, profesional y estado, y opción Limpiar filtros.
+- Actualización de agenda conservando filtros, contador de coincidencias y total.
+- Consulta del día completo y acceso a profesionales inactivos y datos históricos.
+- 13 pruebas nuevas de consulta e interfaz; 18 pruebas aprobadas sobre la base de
+  esta rama (5 existentes y 13 nuevas). Ruff y compilación correctos.
+- Cambios preparados directamente en 1-feature_agenda_simulada por indicación del
+  usuario, sin fusión ni envío a beta.
+
 ### Incorporado
 
 - **F1 — Agenda y panel:** existe una interfaz administrativa en Streamlit para
@@ -33,9 +43,8 @@ considerarse terminada ni desplegada.
 
 ### Parcial o pendiente de completar
 
-- **F1:** faltan los filtros de agenda por fecha, profesional y estado. El
-  inicializador ya permite preparar una base reproducible, pero quedan decisiones
-  del modelo de datos y pruebas del panel por completar.
+- **F1:** filtros implementados y cubiertos por pruebas de consulta e interfaz.
+  Queda revisar visualmente el resultado y completar la aceptación de la función.
 - **F2:** la simulación no demuestra todavía el flujo completo de chatbot ni
   todos los flujos esperados. Por ejemplo, las respuestas repetidas para citas
   ya confirmadas o canceladas no se registran como resultado idempotente; el
