@@ -1,11 +1,15 @@
 # Changelog
 
-Registro de funcionalidades incorporadas y pendientes del prototipo CESFAM
-Bellavista. Este documento refleja el código y la documentación revisados al
-12/11/2026; una funcionalidad descrita como parcial o pendiente no debe
-considerarse terminada ni desplegada.
+Registro del estado del prototipo CESFAM Bellavista, revisado el 22/11/2026.
 
-## [En desarrollo]
+## [0.2.0] — 2026-11-22
+
+### Instalación local
+
+- Plantilla `.env.example` con las variables vacías. Para abrir el panel, copiar
+  la plantilla a `.env` y definir `CESFAM_PANEL_PASSWORD`.
+- El panel usa `chatbot.db` cuando `CESFAM_DB_PATH` queda vacía. Los envíos de
+  WhatsApp permanecen desactivados en la configuración inicial.
 
 ### Filtros de agenda
 
@@ -17,7 +21,7 @@ considerarse terminada ni desplegada.
 - Pruebas de consulta e interfaz para los filtros, los casos sin coincidencias
   y la actualización de estados en el panel con acceso administrativo.
 
-### 18/11/2026 — Botones por cita (cambios locales)
+### Botones por cita
 
 - Nuevo modo opcional de plantilla con Confirmar/Cancelar, tres variables de cuerpo
   y vínculo firmado de cada botón con envío, paciente, cita y acción.
@@ -25,10 +29,10 @@ considerarse terminada ni desplegada.
   alterados, ajenos o de citas pasadas, y acuses con profesional/fecha/hora.
 - Compatibilidad con la plantilla anterior y comandos de texto. No se selecciona
   automáticamente una cita si una respuesta numérica es ambigua.
-- 55 pruebas aprobadas, Ruff y compilación correctos. Nueva plantilla enviada a Meta
-  con estado PENDING; todavía no activada ni probada en teléfono con botones.
+- La plantilla se envió a Meta el 18/11/2026 y quedó en estado `PENDING` en esa
+  revisión. La prueba con botones en el teléfono sigue pendiente.
 
-### Integración WhatsApp local (sin publicar)
+### Integración de WhatsApp para pruebas locales
 
 - Webhook firmado, respuestas idempotentes y worker de recordatorios implementados.
 - Migración con respaldo, acceso al panel y consulta de actividad.
@@ -55,7 +59,8 @@ considerarse terminada ni desplegada.
 - **Pruebas del inicializador:** se comprueba la creación completa, la
   conservación de una base existente y la limpieza si el esquema falla.
 - **Integración continua:** GitHub Actions ejecuta lint, pruebas y verificación
-  de compilación con Python 3.12 en pull requests y pushes a `main`/`master`.
+  de compilación con Python 3.12 en pull requests y pushes a `beta`, `main` o
+  `master`.
 - **Documentación y configuración:** se agregaron README, reglas `.gitignore`
   y manifiestos de dependencias para ejecución y desarrollo.
 
@@ -63,16 +68,16 @@ considerarse terminada ni desplegada.
 
 - **F1:** filtros implementados y cubiertos por pruebas de consulta e interfaz.
   Queda revisar visualmente el resultado y completar la aceptación de la función.
-- **F2:** lógica compartida y respuestas WhatsApp verificadas con HTTP simulado;
-  falta configurar Meta y comprobar el flujo en un teléfono autorizado.
+- **F2:** el flujo con botones está verificado con HTTP simulado. Falta
+  comprobar el nuevo modo en un teléfono autorizado.
+- **F3:** generación local de recordatorios de 72 y 24 horas, prevención de
+  duplicados, control de zona horaria y registro de intentos. Queda pendiente
+  validar la entrega con la nueva plantilla.
 - **Despliegue:** no se ha desplegado la aplicación. La evaluación está en
   WHATSAPP.md; falta comprobar un entorno gratuito con persistencia y worker.
 
 ### Aún no implementado
 
-- **F3 — Entrega real pendiente:** generación local implementada a 72 y 24 horas,
-  prevención de duplicados, control de zona horaria y registro de intentos
-  exitosos o fallidos.
 - **F4 — Reasignación manual:** alerta administrativa al liberarse una cita,
   selección manual desde la lista de espera, reserva transaccional e historial
   de la reasignación. La existencia de tablas `waitlist` u `offers` no acredita
@@ -118,5 +123,5 @@ las pruebas automatizadas ni la integración continua.
 La guía de continuidad, las historias de usuario y los documentos de
 planificación se conservan fuera del repositorio y no se enlazan desde GitHub.
 
-[En desarrollo]: https://github.com/joseromeroaravena-lab/Proyecto-/compare/v0.1.0...HEAD
+[0.2.0]: https://github.com/joseromeroaravena-lab/Proyecto-/tree/v0.2.0
 [0.1.0]: https://github.com/joseromeroaravena-lab/Proyecto-/releases/tag/v0.1.0
