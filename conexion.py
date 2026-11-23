@@ -4,10 +4,11 @@ from contextlib import closing
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent / '.env')
+directorio_proyecto = Path(__file__).resolve().parent
+load_dotenv(directorio_proyecto / '.env')
 
 # Ubicación de la base de datos
-ruta_db = Path(os.getenv('CESFAM_DB_PATH', str(Path(__file__).resolve().parent / 'chatbot.db'))).resolve()
+ruta_db = Path(os.getenv('CESFAM_DB_PATH') or directorio_proyecto / 'chatbot.db').resolve()
 
 # Conectar con SQLite
 def conectar():

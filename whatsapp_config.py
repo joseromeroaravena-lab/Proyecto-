@@ -25,7 +25,7 @@ class Config:
     )
     template: str = field(default_factory=lambda: os.getenv("WA_REMINDER_TEMPLATE", ""))
     language: str = field(
-        default_factory=lambda: os.getenv("WA_TEMPLATE_LANGUAGE", "es")
+        default_factory=lambda: os.getenv("WA_TEMPLATE_LANGUAGE") or "es"
     )
     buttons: bool = field(
         default_factory=lambda: os.getenv("WA_REMINDER_BUTTONS") == "1"
