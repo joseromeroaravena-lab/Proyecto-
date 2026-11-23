@@ -40,14 +40,22 @@ y la prueba en teléfono se describen en WHATSAPP.md. El modo anterior sigue dis
 
 ## Instalación y ejecución local
 
-Desde la raíz del repositorio, en PowerShell:
+Ejecuta estos comandos en PowerShell desde la raíz del repositorio.
 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe crear_base.py
-Copy-Item -LiteralPath .env.example -Destination .env
-# Editar .env: establecer CESFAM_PANEL_PASSWORD antes de abrir el panel.
+if (-not (Test-Path -LiteralPath .env)) {
+    Copy-Item -LiteralPath .env.example -Destination .env
+}
+```
+
+Abre `.env` y establece una contraseña en `CESFAM_PANEL_PASSWORD`. Para usar
+`chatbot.db`, deja `CESFAM_DB_PATH` vacía. Inicia el panel e ingresa con la
+contraseña que elegiste.
+
+```powershell
 .\.venv\Scripts\python.exe -m streamlit run panel_admin.py
 ```
 
@@ -103,8 +111,8 @@ la misma SQLite persistente. Publicar solo el panel no satisface esos requisitos
 La evaluación de servicios gratuitos y el respaldo local con túnel HTTPS están
 en [WHATSAPP.md](WHATSAPP.md). No se ha desplegado infraestructura.
 
-Mantener datos reales, secretos y la base de trabajo fuera de GitHub. Reservar
-`v0.2.0` para la entrega integrada y validada.
+Mantener datos reales, secretos y la base de trabajo fuera de GitHub.
+La etiqueta `v0.2.0` corresponde a la versión integrada para uso local.
 
 ## Documentación del proyecto
 

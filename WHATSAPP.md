@@ -23,16 +23,19 @@ Streamlit permite consultar citas, consentimiento, respuestas y envíos.
 
 ## 2. Preparar el proyecto local
 
-En PowerShell, desde la raíz del repositorio:
+Ejecuta estos comandos en PowerShell desde la raíz del repositorio.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-Copy-Item -LiteralPath .env.example -Destination .env
+if (-not (Test-Path -LiteralPath .env)) {
+    Copy-Item -LiteralPath .env.example -Destination .env
+}
 ```
 
 Si `.env` ya existe, conservarlo y agregar las claves faltantes manualmente.
 Editar `.env` y establecer una contraseña administrativa larga y exclusiva en
-`CESFAM_PANEL_PASSWORD`. Conservar ambos controles de envío en `0`.
+`CESFAM_PANEL_PASSWORD`. Dejar `WA_SEND_ENABLED` y `WA_TEST_NUMBER_CONFIRMED`
+vacíos o en `0` durante la configuración inicial.
 
 Si no existe la base:
 
@@ -272,6 +275,5 @@ confirmación, cancelación, acuses y recordatorios 72/24h entregados con el emi
 prueba. Quedan pendientes el nuevo modo de botones en teléfono, el número propio
 y el despliegue persistente. No equiparar tests simulados con entrega real.
 
-No crear `v0.2.0` ni fusionar a `master` mientras esos criterios de entrega sigan
-pendientes. La rama actual agrupa F2/F3 por su integración compartida; futuras
-modificaciones seguirán `feature → beta → master → etiqueta`.
+La etiqueta `v0.2.0` identifica la versión del prototipo validada en local.
+Las versiones siguen el flujo `feature → beta → master → etiqueta`.
