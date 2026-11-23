@@ -17,6 +17,17 @@ considerarse terminada ni desplegada.
 - Pruebas de consulta e interfaz para los filtros, los casos sin coincidencias
   y la actualización de estados en el panel con acceso administrativo.
 
+### 18/11/2026 — Botones por cita (cambios locales)
+
+- Nuevo modo opcional de plantilla con Confirmar/Cancelar, tres variables de cuerpo
+  y vínculo firmado de cada botón con envío, paciente, cita y acción.
+- Soporte de respuestas de plantilla e interactivas; protección ante botones
+  alterados, ajenos o de citas pasadas, y acuses con profesional/fecha/hora.
+- Compatibilidad con la plantilla anterior y comandos de texto. No se selecciona
+  automáticamente una cita si una respuesta numérica es ambigua.
+- 55 pruebas aprobadas, Ruff y compilación correctos. Nueva plantilla enviada a Meta
+  con estado PENDING; todavía no activada ni probada en teléfono con botones.
+
 ### Integración WhatsApp local (sin publicar)
 
 - Webhook firmado, respuestas idempotentes y worker de recordatorios implementados.
@@ -50,6 +61,8 @@ considerarse terminada ni desplegada.
 
 ### Parcial o pendiente de completar
 
+- **F1:** filtros implementados y cubiertos por pruebas de consulta e interfaz.
+  Queda revisar visualmente el resultado y completar la aceptación de la función.
 - **F2:** lógica compartida y respuestas WhatsApp verificadas con HTTP simulado;
   falta configurar Meta y comprobar el flujo en un teléfono autorizado.
 - **Despliegue:** no se ha desplegado la aplicación. La evaluación está en

@@ -27,6 +27,9 @@ class Config:
     language: str = field(
         default_factory=lambda: os.getenv("WA_TEMPLATE_LANGUAGE", "es")
     )
+    buttons: bool = field(
+        default_factory=lambda: os.getenv("WA_REMINDER_BUTTONS") == "1"
+    )
 
     def validar_envio(self):
         # Sin presupuesto: ningún envío desde un número propio habilitado.
@@ -41,3 +44,7 @@ class Config:
             or not self.allowed
         ):
             raise ValueError("Configuración de envío incompleta.")
+        if self.buttons and not self.secret:
+            raise ValueError(
+                "Los botones requieren WA_APP_SECRET para vincular cada cita."
+            )

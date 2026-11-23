@@ -144,6 +144,9 @@ dejan de procesarse envíos. El botón de actualizar del panel permite ver cambi
 
 ## 6. Recordatorios y estados
 
+El modo de texto anterior se mantiene con `WA_REMINDER_BUTTONS=0` (predeterminado).
+El modo de botones se describe al final de esta sección.
+
 Configurar `WA_REMINDER_TEMPLATE` y `WA_TEMPLATE_LANGUAGE` con una plantilla aprobada
 para esa cuenta, cuyo cuerpo tenga cuatro parámetros de texto en este orden:
 profesional y especialidad, fecha local DD/MM/AAAA, hora HH:MM y referencia de cita.
@@ -187,6 +190,48 @@ reencola automáticamente ni se regeneran duplicados.
 Para demostrar 72h/24h sin esperar tres días, usar las pruebas con reloj controlado;
 no cambiar el reloj de Windows ni alterar una base con procesos activos.
 
+### Recordatorios con botones Confirmar / Cancelar
+
+La nueva plantilla está definida en
+[`database/plantilla_recordatorio_botones.json`](database/plantilla_recordatorio_botones.json):
+`recordatorio_cita_botones_demo`, categoría Utilidad e idioma `es_CL`.
+Tiene tres variables de cuerpo (profesional/especialidad, fecha y hora) y dos
+botones de respuesta rápida: **Confirmar** y **Cancelar**. No muestra referencias
+internas al paciente. Fue enviada a Meta el 18/11/2026 y quedó `PENDING` en ese corte.
+
+Cuando Meta confirme que está `APPROVED` y que coinciden su cuerpo y botones:
+
+```dotenv
+WA_REMINDER_TEMPLATE=recordatorio_cita_botones_demo
+WA_TEMPLATE_LANGUAGE=es_CL
+WA_REMINDER_BUTTONS=1
+```
+
+Reiniciar API y worker para cargar el código/configuración. Mantener el emisor de
+prueba y los destinatarios autorizados. La plantilla anterior `recordatorio_cita_demo`
+permanece disponible como respaldo con `WA_REMINDER_BUTTONS=0` y cuatro variables.
+Los mensajes anteriores no adquieren botones: la prueba real requiere un nuevo
+recordatorio, conservando la unicidad por cita/umbral y los historiales existentes.
+
+Cada botón lleva un identificador firmado con WA_APP_SECRET que vincula acción,
+envío, paciente y cita. El webhook valida ese vínculo, el contexto cuando viene
+incluido, el consentimiento y la pertenencia/fecha de la cita. No decide por la
+etiqueta visible ni elige la última cita. También registra intentos inválidos.
+Cambiar el secreto de la aplicación invalida los botones firmados con el anterior.
+
+Prueba de aceptación: con dos citas activas, pulsar Cancelar en el recordatorio de
+una debe cancelar únicamente esa cita; Confirmar debe mantener intacta la otra.
+Repetir un clic no debe duplicar cambios. Botones alterados, ajenos o de citas
+pasadas no deben modificar la agenda. Estas situaciones están cubiertas por tests;
+la prueba en teléfono del nuevo modo queda pendiente de aprobación/activación.
+
+Se conservan las entradas de texto 1/2 y CONFIRMAR/CANCELAR. Escribir solo 2 con
+varias citas sigue requiriendo contexto; pulsar el botón del recordatorio sí
+identifica su cita sin escribir un ID ni usar Responder manualmente.
+
+Referencia de formato:
+[plantillas con respuestas rápidas de Meta](https://whatsapp.github.io/WhatsApp-Nodejs-SDK/api-reference/types/TemplateObject/).
+
 ## 7. Despliegue y número propio: pendientes externos
 
 Evaluación documental al 12/11/2026:
@@ -222,8 +267,10 @@ Get-ChildItem -File -Filter *.py | ForEach-Object { .\.venv\Scripts\python.exe -
 
 Las pruebas usan bases temporales y HTTP simulado; no llaman a Meta. Registrar por
 separado: pruebas automatizadas, capturas de teléfono sin secretos, estados del
-panel y validación de reinicio/persistencia en nube. Falta comprobar con Meta:
-cuenta, primer mensaje, webhook externo, plantilla, entrega al teléfono y número propio.
+panel y validación de reinicio/persistencia en nube. En el modo anterior se verificaron
+confirmación, cancelación, acuses y recordatorios 72/24h entregados con el emisor de
+prueba. Quedan pendientes el nuevo modo de botones en teléfono, el número propio
+y el despliegue persistente. No equiparar tests simulados con entrega real.
 
 No crear `v0.2.0` ni fusionar a `master` mientras esos criterios de entrega sigan
 pendientes. La rama actual agrupa F2/F3 por su integración compartida; futuras
