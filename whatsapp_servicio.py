@@ -1,11 +1,13 @@
 import re
+import json
 from datetime import datetime, timezone
 
 from citas_servicio import cambiar_estado
 from tiempos import ahora_utc, instante, SANTIAGO
+from whatsapp_botones import resolver_boton
 
 
-def detalle_recordatorio(cita_id, profesional, especialidad, fecha):
+def detalle_recordatorio(cita_id, profesional, especialidad, fecha, botones=False):
     local = instante(fecha, local=True).astimezone(SANTIAGO)
     especialista = f"{profesional} ({especialidad})"
     parametros = [
@@ -14,6 +16,14 @@ def detalle_recordatorio(cita_id, profesional, especialidad, fecha):
         local.strftime("%H:%M"),
         str(cita_id),
     ]
+    if botones:
+        texto = (
+            f"Tienes una cita médica con {especialista}.\n"
+            f"Fecha: {parametros[1]}.\nHora: {parametros[2]}.\n\n"
+            "Selecciona Confirmar o Cancelar para responder sobre esta cita.\n"
+            "Demostración académica con datos ficticios."
+        )
+        return texto, parametros[:3]
     texto = (
         f"Tienes una cita médica con {especialista} el {parametros[1]} a las {parametros[2]}.\n\n"
         "Responde con una opción:\n1. Confirmar asistencia\n2. Cancelar cita\n\n"
@@ -45,7 +55,7 @@ def encolar(db, paciente_id, cita_id, tipo, mensaje, ahora, inbound_id=None):
     )
 
 
-def recibir(db, mensaje, ahora=None):
+def recibir(db, mensaje, ahora=None, secreto_botones=""):
     ahora = ahora or ahora_utc()
     meta_id = mensaje["id"]
     if db.execute(
@@ -66,17 +76,44 @@ def recibir(db, mensaje, ahora=None):
     if mensaje.get("type") == "interactive":
         contenido = mensaje.get("interactive", {}).get("button_reply", {}).get("id", "")
     contenido = str(contenido)[:4096]
+    entrada = contenido
+    es_boton = mensaje.get("type") in ("button", "interactive")
+    token_boton = None
+    if mensaje.get("type") == "button":
+        token_boton = mensaje.get("button", {}).get("payload")
+    elif mensaje.get("type") == "interactive":
+        token_boton = mensaje.get("interactive", {}).get("button_reply", {}).get("id")
+    if es_boton:
+        contenido = json.dumps(
+            {
+                "text": entrada,
+                "payload": token_boton,
+                "context": mensaje.get("context", {}).get("id"),
+            },
+            ensure_ascii=False,
+        )[:4096]
     cita_id = None
     resultado = "unauthorized"
     acuse = None
     if paciente and paciente[2] == 1:
+        if es_boton:
+            seleccion = resolver_boton(
+                db,
+                paciente[0],
+                token_boton,
+                secreto_botones,
+                mensaje.get("context", {}).get("id"),
+            )
+            entrada = f"{seleccion[0]} {seleccion[1]}" if seleccion else ""
         comando = re.fullmatch(
-            r"(confirmar|cancelar|1|2)(?:\s+([0-9]+))?", contenido.strip(), re.I
+            r"(confirmar|cancelar|1|2)(?:\s+([0-9]+))?", entrada.strip(), re.I
         )
         if not comando:
-            resultado = "invalid"
+            resultado = "invalid_button" if es_boton else "invalid"
             acuse = (
-                "Responde 1 para confirmar o 2 para cancelar. "
+                "No pude validar este botón. Usa los botones de un recordatorio vigente."
+                if es_boton
+                else "Responde 1 para confirmar o 2 para cancelar. "
                 "Si tienes varias citas, indica también la referencia: 1 <ID> o 2 <ID>."
             )
         else:
@@ -112,7 +149,8 @@ def recibir(db, mensaje, ahora=None):
                 elif len(citas) > 1:
                     resultado = "ambiguous"
                     acuse = (
-                        "Tienes varias citas. Responde al recordatorio correspondiente "
+                        "Tienes varias citas. Usa el botón Confirmar o Cancelar del "
+                        "recordatorio correspondiente, o responde citando el mensaje "
                         "usando Responder en WhatsApp, o escribe 1 <ID> para confirmar "
                         "o 2 <ID> para cancelar. Referencias: "
                         + ", ".join(str(c[0]) for c in citas)
@@ -130,6 +168,20 @@ def recibir(db, mensaje, ahora=None):
                     resultado,
                     "La cita no está disponible para esta acción. Indica un ID válido.",
                 )
+                if resultado in (
+                    "confirmed",
+                    "cancelled",
+                    "already_confirmed",
+                    "already_cancelled",
+                ):
+                    datos = db.execute(
+                        """SELECT professional, specialty, appointment_date
+                        FROM appointments WHERE id=? AND patient_id=?""",
+                        (cita_id, paciente[0]),
+                    ).fetchone()
+                    if datos:
+                        local = instante(datos[2], local=True).astimezone(SANTIAGO)
+                        acuse += f" Atención con {datos[0]} ({datos[1]}), el {local:%d/%m/%Y} a las {local:%H:%M}."
     recibida = ahora
     if mensaje.get("timestamp"):
         recibida = min(

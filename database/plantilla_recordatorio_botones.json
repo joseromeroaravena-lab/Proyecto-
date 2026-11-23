@@ -1,0 +1,21 @@
+{
+  "name": "recordatorio_cita_botones_demo",
+  "language": "es_CL",
+  "category": "UTILITY",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "Tienes una cita médica con {{1}}.\nFecha: {{2}}.\nHora: {{3}}.\n\nSelecciona Confirmar o Cancelar para responder sobre esta cita.\nDemostración académica con datos ficticios.",
+      "example": {
+        "body_text": [["Dra. Ana Martínez (Medicina General)", "21/11/2026", "10:00"]]
+      }
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {"type": "QUICK_REPLY", "text": "Confirmar"},
+        {"type": "QUICK_REPLY", "text": "Cancelar"}
+      ]
+    }
+  ]
+}

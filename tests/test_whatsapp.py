@@ -12,7 +12,8 @@ from fastapi.testclient import TestClient
 import conexion
 from crear_base import crear_base
 from migrar_whatsapp import migrar
-from recordatorios import generar, despachar, bloqueo_worker
+from recordatorios import generar, despachar, bloqueo_worker, construir_payload
+from whatsapp_botones import payload_boton
 from tiempos import instante, SANTIAGO
 from whatsapp_api import crear_app, registrar_estado
 from whatsapp_config import Config
@@ -61,7 +62,213 @@ def config():
         allowed={"56912345678"},
         template="demo",
         language="es",
+        buttons=False,
     )
+
+
+def preparar_boton(db, accion="cancelar"):
+    generar(db, NOW, botones=True)
+    cursor = db.execute(
+        "SELECT * FROM whatsapp_outbox WHERE appointment_id=10 AND kind='72h'"
+    )
+    fila = dict(zip([c[0] for c in cursor.description], cursor.fetchone()))
+    db.execute(
+        "UPDATE whatsapp_outbox SET meta_id='reminder-10', status='delivered' WHERE id=?",
+        (fila["id"],),
+    )
+    return payload_boton(fila, accion, "secret")
+
+
+@pytest.mark.parametrize("tipo", ["button", "interactive"])
+@pytest.mark.parametrize(
+    "accion,esperado", [("confirmar", "confirmed"), ("cancelar", "cancelled")]
+)
+@pytest.mark.parametrize("con_contexto", [True, False])
+def test_button_targets_its_appointment_with_multiple_active(
+    base, tipo, accion, esperado, con_contexto
+):
+    with sqlite3.connect(base) as db:
+        db.execute("""INSERT INTO appointments
+            (id,patient_id,specialty,professional,appointment_date)
+            SELECT 11,1,specialty,professional,appointment_date FROM appointments WHERE id=10""")
+        token = preparar_boton(db, accion)
+        evento = {"id": "click1", "from": "56912345678", "type": tipo}
+        if tipo == "button":
+            evento["button"] = {
+                "text": "Etiqueta visible no utilizada para decidir",
+                "payload": token,
+            }
+        else:
+            evento["interactive"] = {
+                "type": "button_reply",
+                "button_reply": {"id": token, "title": "Etiqueta"},
+            }
+        if con_contexto:
+            evento["context"] = {"id": "reminder-10"}
+        assert recibir(db, evento, NOW, secreto_botones="secret") == esperado
+        assert recibir(db, evento, NOW, secreto_botones="secret") == "duplicate"
+        evento["id"] = "click2"
+        assert (
+            recibir(db, evento, NOW, secreto_botones="secret") == "already_" + esperado
+        )
+        assert db.execute("SELECT status FROM appointments WHERE id=11").fetchone() == (
+            "scheduled",
+        )
+        assert db.execute("SELECT count(*) FROM whatsapp_inbound").fetchone() == (2,)
+        acuse = db.execute(
+            "SELECT message FROM whatsapp_outbox WHERE kind='reply' ORDER BY id LIMIT 1"
+        ).fetchone()[0]
+        assert "Demo (Demo)" in acuse and "18/11/2026" in acuse
+
+
+@pytest.mark.parametrize(
+    "fallo",
+    [
+        "firma",
+        "accion",
+        "contexto",
+        "otro_paciente",
+        "no_enviado",
+        "sin_payload",
+        "sin_secreto",
+        "otro_secreto",
+        "cita_ajena",
+        "pasada",
+        "fallido",
+        "sin_consentimiento",
+    ],
+)
+def test_invalid_buttons_never_fall_back_to_another_appointment(base, fallo):
+    with sqlite3.connect(base) as db:
+        token = preparar_boton(db)
+        evento = {
+            "id": "click",
+            "from": "56912345678",
+            "type": "button",
+            "button": {"text": "Cancelar", "payload": token},
+            "context": {"id": "reminder-10"},
+        }
+        secreto = "secret"
+        esperado = "invalid_button"
+        if fallo == "firma":
+            evento["button"]["payload"] = token[:-1] + (
+                "0" if token[-1] != "0" else "1"
+            )
+        if fallo == "accion":
+            evento["button"]["payload"] = token.replace(":cancelar:", ":confirmar:")
+        if fallo == "contexto":
+            evento["context"]["id"] = "other-message"
+        if fallo == "otro_paciente":
+            db.execute(
+                "UPDATE patients SET phone='+56987654321',consent_whatsapp=1 WHERE id=2"
+            )
+            evento["from"] = "56987654321"
+        if fallo == "no_enviado":
+            db.execute(
+                "UPDATE whatsapp_outbox SET status='pending',meta_id=NULL WHERE kind='72h'"
+            )
+        if fallo == "sin_payload":
+            evento["button"].pop("payload")
+        if fallo == "sin_secreto":
+            secreto = ""
+        if fallo == "otro_secreto":
+            secreto = "other-secret"
+        if fallo == "cita_ajena":
+            db.execute("UPDATE appointments SET patient_id=2 WHERE id=10")
+            esperado = "unavailable"
+        if fallo == "pasada":
+            db.execute(
+                "UPDATE appointments SET appointment_date=? WHERE id=10",
+                ((NOW - timedelta(hours=1)).astimezone(SANTIAGO).isoformat(),),
+            )
+            esperado = "unavailable"
+        if fallo == "fallido":
+            db.execute("UPDATE whatsapp_outbox SET status='failed' WHERE kind='72h'")
+        if fallo == "sin_consentimiento":
+            db.execute("UPDATE patients SET consent_whatsapp=0 WHERE id=1")
+            esperado = "unauthorized"
+        assert recibir(db, evento, NOW, secreto_botones=secreto) == esperado
+        assert db.execute("SELECT status FROM appointments WHERE id=10").fetchone() == (
+            "scheduled",
+        )
+
+
+def test_template_button_payloads_and_three_body_variables(base):
+    ajustes = config()
+    ajustes.buttons = True
+    ajustes.template = "recordatorio_cita_botones_demo"
+    with sqlite3.connect(base) as db:
+        db.row_factory = sqlite3.Row
+        generar(db, NOW, botones=True)
+        fila = db.execute("SELECT * FROM whatsapp_outbox").fetchone()
+        payload, bloqueo = construir_payload(db, fila, ajustes, NOW)
+        assert bloqueo is None
+        componentes = payload["template"]["components"]
+        assert [p["text"] for p in componentes[0]["parameters"]] == [
+            "Demo (Demo)",
+            "18/11/2026",
+            "09:00",
+        ]
+        assert [p["index"] for p in componentes[1:]] == ["0", "1"]
+        assert all(p["sub_type"] == "quick_reply" for p in componentes[1:])
+        assert componentes[1]["parameters"][0]["payload"] == payload_boton(
+            fila, "confirmar", "secret"
+        )
+        assert componentes[2]["parameters"][0]["payload"] == payload_boton(
+            fila, "cancelar", "secret"
+        )
+        assert "Referencia de tu cita" not in fila["message"]
+
+
+def test_signed_webhook_processes_button(base, monkeypatch):
+    monkeypatch.setattr("whatsapp_servicio.ahora_utc", lambda: NOW)
+    with sqlite3.connect(base) as db:
+        token = preparar_boton(db)
+    evento = {
+        "id": "click",
+        "from": "56912345678",
+        "type": "button",
+        "button": {"text": "Cancelar", "payload": token},
+        "context": {"id": "reminder-10"},
+    }
+    cuerpo = json.dumps(
+        {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "changes": [
+                        {
+                            "value": {
+                                "metadata": {"phone_number_id": "123"},
+                                "messages": [evento],
+                            }
+                        }
+                    ]
+                }
+            ],
+        }
+    ).encode()
+    firma = "sha256=" + hmac.new(b"secret", cuerpo, hashlib.sha256).hexdigest()
+    respuesta = TestClient(crear_app(config())).post(
+        "/webhooks/whatsapp", content=cuerpo, headers={"x-hub-signature-256": firma}
+    )
+    assert respuesta.status_code == 200
+    with sqlite3.connect(base) as db:
+        assert db.execute("SELECT status FROM appointments WHERE id=10").fetchone() == (
+            "cancelled",
+        )
+        contenido = json.loads(
+            db.execute("SELECT content FROM whatsapp_inbound").fetchone()[0]
+        )
+        assert contenido["payload"] == token
+
+
+def test_button_mode_requires_secret(base):
+    ajustes = config()
+    ajustes.buttons = True
+    ajustes.secret = ""
+    with pytest.raises(ValueError):
+        ajustes.validar_envio()
 
 
 def test_numeric_options_and_original_content(base):

@@ -108,7 +108,7 @@ def crear_app(config=None):
                         ):
                             continue
                         for mensaje in valor.get("messages", []):
-                            recibir(db, mensaje)
+                            recibir(db, mensaje, secreto_botones=config.secret)
                         for estado in valor.get("statuses", []):
                             registrar_estado(db, estado)
         except (ValueError, TypeError, KeyError, AttributeError, OverflowError):

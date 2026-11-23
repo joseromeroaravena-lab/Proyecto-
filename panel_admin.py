@@ -6,8 +6,15 @@ from datetime import datetime
 
 import streamlit as st
 
+from agenda_consultas import ESTADOS, consultar_citas, profesionales_agenda
 from conexion import conectar
 from tiempos import SANTIAGO
+
+
+def limpiar_filtros_agenda():
+    st.session_state['agenda_fecha'] = None
+    st.session_state['agenda_profesional'] = ''
+    st.session_state['agenda_estado'] = ''
 
 
 def registrar_paciente(nombre, telefono):
@@ -149,29 +156,54 @@ with st.expander("Nueva cita"):
                     st.error(f"No se pudo guardar la cita: {error}")
 
 st.subheader("Agenda")
-st.button("Actualizar agenda")
 
 try:
     with closing(conectar()) as db:
-        citas = db.execute("""
-            SELECT a.id, p.name, pr.name, s.name, a.appointment_date, a.status
-            FROM appointments AS a
-            JOIN patients AS p ON p.id = a.patient_id
-            LEFT JOIN professionals AS pr ON pr.id = a.professional_id
-            LEFT JOIN specialties AS s ON s.id = a.specialty_id
-            ORDER BY a.appointment_date, a.id
-        """).fetchall()
+        opciones_profesional = profesionales_agenda(db)
+        total_citas = db.execute('SELECT COUNT(*) FROM appointments').fetchone()[0]
 except sqlite3.Error as error:
     st.error(f"No se pudo consultar la agenda: {error}")
     st.stop()
 
-estados = {
-    "scheduled": "Programada",
-    "confirmed": "Confirmada",
-    "cancelled": "Cancelada",
-}
+st.caption('Combina los filtros para buscar citas. Deja la fecha vacía para ver todos los días.')
+col_dia, col_profesional, col_estado = st.columns(3)
+with col_dia:
+    filtro_fecha = st.date_input(
+        'Fecha de atención', value=None, format='DD/MM/YYYY', key='agenda_fecha',
+    )
+with col_profesional:
+    # Si el último registro de un profesional se eliminó, restablecer su selección.
+    if st.session_state.get('agenda_profesional', '') not in ['', *opciones_profesional]:
+        st.session_state['agenda_profesional'] = ''
+    filtro_profesional = st.selectbox(
+        'Profesional', ['', *opciones_profesional],
+        format_func=lambda valor: valor or 'Todos',
+        key='agenda_profesional',
+    )
+with col_estado:
+    filtro_estado = st.selectbox(
+        'Estado', ['', *ESTADOS],
+        format_func=lambda valor: ESTADOS.get(valor, 'Todos'),
+        key='agenda_estado',
+    )
 
-st.metric("Citas registradas", len(citas))
+col_actualizar, col_limpiar = st.columns(2)
+with col_actualizar:
+    st.button('Actualizar agenda', key='agenda_actualizar')
+with col_limpiar:
+    st.button('Limpiar filtros', key='agenda_limpiar', on_click=limpiar_filtros_agenda)
+
+try:
+    with closing(conectar()) as db:
+        citas = consultar_citas(
+            db, filtro_fecha, filtro_profesional or None, filtro_estado or None,
+        )
+except sqlite3.Error as error:
+    st.error(f'No se pudo consultar la agenda: {error}')
+    st.stop()
+
+st.metric('Citas encontradas', len(citas))
+st.caption(f'Total de citas registradas: {total_citas}.')
 
 if citas:
     filas = [
@@ -181,11 +213,13 @@ if citas:
             "Profesional": profesional or "Sin asignar",
             "Especialidad": especialidad or "Sin asignar",
             "Fecha y hora": fecha,
-            "Estado": estados.get(estado, estado or "Sin estado"),
+            "Estado": ESTADOS.get(estado, estado or "Sin estado"),
         }
         for cita_id, paciente, profesional, especialidad, fecha, estado in citas
     ]
     st.dataframe(filas, hide_index=True)
+elif total_citas:
+    st.info('No hay citas que coincidan con los filtros seleccionados.')
 else:
     st.info("Todavía no hay citas registradas.")
 
