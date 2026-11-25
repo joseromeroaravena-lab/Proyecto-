@@ -73,8 +73,8 @@ cita. Los scripts de consulta también pueden ejecutarse desde la raíz:
 
 ## CI
 
-GitHub Actions usa Python 3.12 para comprobar cada pull request y cada push a
-`beta`, `main` o `master`.
+GitHub Actions usa Python 3.12 para comprobar los pull requests y los pushes a
+las ramas de trabajo, `beta` y `master`.
 
 1. **Lint:** Ruff revisa los scripts Python ubicados en la raíz.
 2. **Tests:** `python -m pytest -q`; utilizan una SQLite temporal y no modifican
@@ -96,13 +96,21 @@ el paso de build apropiado para estos scripts.
 
 ## Flujo de ramas
 
-1. Crea tu rama desde `beta` con el formato `feature/<nombre>` o el formato
-   numerado del proyecto, como `4-feature_lista_espera`.
-2. Abre un pull request a `beta`. GitHub comprueba la rama de origen y exige
-   `Lint`, `Test` y `Build verification` antes de permitir la fusión.
-3. Cuando termine el CI de `beta` y se valide el cambio, abre un pull request
-   desde `beta` hacia `master`. GitHub vuelve a ejecutar las comprobaciones
-   sobre el resultado de la fusión.
+1. **Ramas de trabajo.** Crea una rama desde `origin/beta` con el formato
+   `feature/<nombre>` o el formato numerado, como `4-feature_lista_espera`.
+   Haz los commits y pushes en esa rama y abre un pull request a `beta`.
+2. **`beta`, desarrollo y pruebas.** GitHub exige `Branch flow to beta`,
+   `Lint`, `Test` y `Build verification` para integrar el pull request.
+   Después de la fusión, el CI vuelve a probar el commit integrado en `beta`.
+   Usa esa versión para las pruebas funcionales.
+3. **`master`, producción.** Una vez validado el cambio, abre un pull request
+   desde la rama `beta` del propio repositorio. `Branch flow to master` comprueba
+   que el CI posterior a la fusión en `beta` aprobó el commit exacto del pull
+   request. GitHub también comprueba el resultado de la fusión y vuelve a
+   ejecutar CI una vez actualizado `master`.
+
+Las reglas activas de GitHub exigen pull request y comprobaciones para `beta`
+y `master` y bloquean los pushes directos a las dos ramas.
 
 ## Despliegue pendiente
 
