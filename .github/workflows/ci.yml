@@ -2,7 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [main, master, beta]
+    branches:
+      - 'feature/**'
+      - '[0-9]+-feature_**'
+      - beta
+      - master
   pull_request:
     types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
@@ -15,7 +19,8 @@ jobs:
     name: Branch flow to ${{ github.base_ref }}
     if: github.event_name == 'pull_request' && (github.base_ref == 'beta' || github.base_ref == 'master')
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      actions: read
     steps:
       - name: Validate pull request source
         shell: bash
@@ -38,6 +43,35 @@ jobs:
               echo "::error::Abre el PR a master desde beta de este repositorio."
               ;;
           esac
+          exit 1
+      - name: Require successful CI on beta for this commit
+        if: github.base_ref == 'master'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BETA_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          for attempt in {1..10}; do
+            result=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+              -f branch=beta -f event=push -f head_sha="$BETA_SHA" -F per_page=1 \
+              --jq '.workflow_runs[0] | .conclusion // .status // "missing"')
+            case "$result" in
+              success)
+                echo "El CI de beta aprobó el commit $BETA_SHA."
+                exit 0
+                ;;
+              missing|queued|in_progress|requested|waiting|pending)
+                if [[ "$attempt" -lt 10 ]]; then
+                  sleep 30
+                fi
+                ;;
+              *)
+                echo "::error::El CI de beta para $BETA_SHA terminó con estado $result."
+                exit 1
+                ;;
+            esac
+          done
+          echo "::error::El CI de beta para $BETA_SHA aún no ha aprobado. Cuando termine, vuelve a ejecutar este check."
           exit 1
 
   lint:
